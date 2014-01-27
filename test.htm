@@ -1,0 +1,100 @@
+Testing...
+
+Lab 4. Cache Simulator
+A cache is a memory bank sitting in between two others, one with faster speed
+and another with slower speed. When reading or writing from/to the slower
+memory, the cache retrieves data from memory addresses near the one desired so
+that if these nearby values are read or written, it can be done at the speed
+of the cache as opposed to the slower memory.
+In this Lab, we will implement a cache simulator so that we can directly
+measure cache hit and miss performance based on spatial locality and other
+factors. We will measure the number of hits and misses (review pp 592-595 in
+the text) in a cache under different scenarios.
+Recall the parameters of a direct mapped cache: (1 line per set).
+a certain number of sets 2^s = S,
+and a certain number of blocks per set 2^b = B. This is the copy of the memory
+data stored in the cache.
+and a memory size 2^m = M.
+and a certain number of tag bits: T = m-(s+b)
+If we have an address a in our memory, we lay out the address, in bits, like
+this:
+t . . . t s . . s b . . . . . b
+m-1 m-T m-T-1 m-T-s m-T-s-1 0
+I haven’t specified the T, s and b in this example but the main rule in
+setting up a cache is that
+T+s+b must equal m, the number of bits in the address.
+And, when you build a cache, you decide how many sets there will be and how
+may blocks per set. Then T must equal
+m-(s+b)
+no choice or the cache will not be properly defined.
+Then the size of the cache, in relative terms is
+S*B
+so it covers M/(S*B) of the memory, which means that M/(S*B) memory addresses
+map to the same cache location.
+In order to implement a read/write cache, we need to introduce a “dirty” bit
+to indicate that the cache contains a value which has not yet been written to
+memory. That is, we will implement a write-back cache (see page 612 in the
+text).
+The picture of a cache (direct mapped cache with # lines per set =1)
+Set 0: valid bit dirty bit tag value(T bits) blocks[B]
+Set 1: valid bit dirty bit tag value(T bits) blocks[B]
+.
+.
+Set s-1: valid bit dirty bit tag value(T bits) blocks[b]
+or
+struct cache_t
+{
+short valid ; // only values 0,1
+short dirty ; // only values 0,1
+int tag ; // largest value 2^T-1
+int *block ;// data from memory
+} cache[S] ;
+We have integers here but the hardware uses bit and usually *block is char.
+There is a cachelab.c framework uploaded. Find the places where you should add
+code.
+Fill in the initcache() function.
+Fill in the readwritercache( int readwrite, int a, int *value, int *hitmiss,
+int voice ) function. I have provided pseudo code.
+In our simulator, we will assume that each memory location holds an integer.
+For testing, you should initialize memory[i] = i so that you can tell in
+debugs whether you are retrieving the correct data from memory. x and y will
+be “pointers” not in the usual sense but the integer location in memory[]
+where the arrays x and y start. You can leave x at zero throughout.
+You can change ni and nj to simulate two dimensional arrays x[ni][nj]: x[i][j]
+will be at location x+i*nj+j. When you vary ni and nj, you should make sure
+that the arrays do not overlap. Normally, x will start at location 0 so, y
+should start at least at location ni*nj. For our tests, we will have ni = nj.
+You have one gratis function included in the framework: locationexample(). You
+could use that to test your simulator. You will see some strange hit/miss
+results and you should try to understand why this happens. I would suggest
+using the “voice” parameter to add debug information inside of
+readwritecache() to show values of readwrite, a, si, ta, bo, where a hit or
+miss is happening and then you will see what is going on.
+We will mainly be dealing with transposing a two dimensional matrix: setting
+x[i][j] = y[j][i] in 2 nested loops. We will do it row-wise and col-wise
+(change j to the outer loop).
+Y array location examples
+1) After you have the simulator working, add two transposition test cases into
+the for( y loop in the locationexample(): one to transpose the y array into
+the x array row-wise and one column-wise (reverse the i and j loops). Call
+stats( t ) at the end for each test. You should see that the cache runs
+smoothly, even though y is in a bad location for copying from y to x.
+Working set size examples.
+Set y at 20000.
+2) a) Create a loop for ni from 88 to 120 in steps of 8, setting nj = ni. This
+will put the working set size over the limit of the cache size. Transpose y
+into x row-wise. Show stats. You should see problems with write hits.
+2) b) add 8x8 blocking to the above transposition to see what happens.
+3) a) Create a loop for ni from 88 to 120, setting nj = ni. This will put the
+working set size over the limit of the cache size. Transpose y into x colwise.
+Show stats. You should see problems with read hits.
+3) b) add 8x8 blocking to the above transposition and see what happens.
+Another optional but interesting example is, create two nested loops: ni from
+30 to 34, nj from 30 to 34 and transpose the matrix row wise. Very interesting
+results. 8x8 blocking would save the day here, to but the matrix dimensions
+are not multiples of 8 so it is more complicated. Of course, what we are
+seeing moves from the write side to the read side in the cache if we do things
+by columns.
+The Lab is due on Wednesday, November 20 at noon. Deliverables are: your
+updated cachelab.c and a .txt file which captures the outputs created by the
+stats() function.
